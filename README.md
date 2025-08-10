@@ -1,6 +1,12 @@
 # SerphunterRecon
 
-A simple subdomain enumeration tool using crt.sh.
+A subdomain enumeration tool useful for reconnaissance.
+
+## Features
+- Uses crt.sh
+- Uses Alienvault OTX
+- Uses Certspotter
+- Saves output to `results/` directory
 
 ## Usage
 
@@ -9,6 +15,6 @@ chmod +x serphunter.sh
 ./serphunter.sh -d example.com
 ```
 
-## Features
-- Uses crt.sh for enumeration
-- Saves results to a text file
+## Changelog
+- v0.2: Added OTX and Certspotter
+- v0.1: Initial release
