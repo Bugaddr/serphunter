@@ -1,19 +1,20 @@
 # SerphunterRecon
 
-Intermediate subdomain enumeration tool.
+Advanced subdomain enumeration with parallel execution support.
 
-## Features
-- Sources: crt.sh, OTX, Certspotter, VirusTotal, Shodan
-- Config file support for API keys
-
-## Configuration
-Edit `config.txt` to add your API keys:
+## Usage
+Sequential mode (slower):
 ```bash
-VIRUSTOTAL_API_KEY="your_key"
-SHODAN_API_KEY="your_key"
+./serphunter.sh -d example.com
+```
+
+Parallel mode (faster):
+```bash
+./serphunter.sh -d example.com -p
 ```
 
 ## Changelog
-- v0.3: Added API key support (VT, Shodan)
-- v0.2: Added OTX, Certspotter
-- v0.1: Initial release
+- v0.4: Parallel execution support
+- v0.3: API keys
+- v0.2: More sources
+- v0.1: Release
