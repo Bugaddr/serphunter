@@ -1,20 +1,18 @@
 # SerphunterRecon
 
-Advanced subdomain enumeration with parallel execution support.
+Subdomain enumeration + Live Server detection.
 
 ## Usage
-Sequential mode (slower):
 ```bash
-./serphunter.sh -d example.com
+./serphunter.sh -d example.com -hp --parallel
 ```
 
-Parallel mode (faster):
-```bash
-./serphunter.sh -d example.com -p
-```
+## Features
+- `-hp`: HTTP Probe to find live servers
+- `-p`: Parallel execution
+- API Key support
 
 ## Changelog
-- v0.4: Parallel execution support
+- v0.5: Added HTTP Probing
+- v0.4: Parallel mode
 - v0.3: API keys
-- v0.2: More sources
-- v0.1: Release
