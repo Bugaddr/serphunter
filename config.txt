@@ -1,0 +1,33 @@
+# SerphunterRecon Configuration File
+# API Keys (optional - leave blank if not available)
+
+# VirusTotal API Key
+VIRUSTOTAL_API_KEY=""
+
+# Censys API ID and Secret
+CENSYS_API_ID=""
+CENSYS_API_SECRET=""
+
+# Shodan API Key
+SHODAN_API_KEY=""
+
+# Certificate Transparency Options
+CT_ENABLED=true
+
+# Alienvault OTX
+OTX_ENABLED=true
+
+# Output format (txt, json, csv)
+OUTPUT_FORMAT="txt"
+
+# Verbosity level (0=quiet, 1=normal, 2=verbose)
+VERBOSITY=1
+
+# Maximum parallel jobs
+MAX_PARALLEL_JOBS=5
+
+# HTTP probe timeout (seconds)
+HTTP_PROBE_TIMEOUT=10
+
+# Enable HTTP probing for live servers
+HTTP_PROBE_ENABLED=false
