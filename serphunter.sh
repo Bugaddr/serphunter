@@ -67,6 +67,9 @@ if [[ "$PARALLEL_MODE" == true ]]; then
     run_certspotter "$TARGET" &
     run_virustotal "$TARGET" &
     run_shodan "$TARGET" &
+    run_hackertarget "$TARGET" &
+    run_wayback "$TARGET" &
+    run_urlscan "$TARGET" &
     wait
 else
     run_crtsh "$TARGET"
@@ -74,6 +77,9 @@ else
     run_certspotter "$TARGET"
     run_virustotal "$TARGET"
     run_shodan "$TARGET"
+    run_hackertarget "$TARGET"
+    run_wayback "$TARGET"
+    run_urlscan "$TARGET"
 fi
 
 # Post-Execution

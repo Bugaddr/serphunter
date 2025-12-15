@@ -31,6 +31,9 @@ SerphunterRecon integrates with the following sources for comprehensive subdomai
 | **Subdomain.center** | Aggregator API | Medium |
 | **VirusTotal** | Enterprise API | High (API Key Required) |
 | **Shodan** | Search Engine API | High (API Key Required) |
+| **HackerTarget** | Host Search | Medium |
+| **Wayback Machine** | Web Archive | High (Historical) |
+| **URLScan.io** | Web Scanner | Medium |
 
 ## Installation
 
