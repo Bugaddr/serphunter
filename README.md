@@ -197,37 +197,16 @@ $ ./serphunter.sh -d target.com --parallel --http-probe
 - ⚠️ Always obtain proper authorization before using on any system
 - ⚠️ Review your local laws and regulations regarding security testing
 
-## Version History
+## Security Considerations
 
-- **v1.0** (Dec 2025) - Production release with full feature set
-- **v0.6** (Dec 2025) - Added comprehensive metrics and reporting
-- **v0.5** (Nov 2025) - Added HTTP/HTTPS probing
-- **v0.4** (Oct 2025) - Implemented parallel execution
-- **v0.3** (Sep 2025) - Added API key support
-- **v0.2** (Aug 2025) - Added multiple enumeration sources
-- **v0.1** (Jul 2025) - Initial release
-
-## Contributing
-
-Contributions, bug reports, and feature requests are welcome! 
+- ✅ Passive reconnaissance only - no active scanning
+- ✅ Respects rate limits of target services
+- ✅ No exploitation or malicious activity
+- ⚠️ Always obtain proper authorization before using on any system
 
 ## License
 
 This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
-
-## Disclaimer
-
-This tool is designed for authorized security testing and educational purposes only. Unauthorized access to computer systems is illegal. Always obtain proper written permission before conducting security assessments.
-
-## Author
-
-Security Researcher | Final Year Engineering Student
-
-## Acknowledgments
-
-- Inspired by similar reconnaissance tools in the cybersecurity community
-- Built on principles of passive information gathering
-- Aggregates data from publicly available certificate transparency logs and APIs
 
 ---
 
