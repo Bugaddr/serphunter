@@ -58,6 +58,10 @@ else
     log_info "Mode: Sequential"
 fi
 
+# Wildcard Check
+detect_wildcard "$TARGET"
+WILDCARD_ACTIVE=$?
+
 # Execution
 log_info "Starting enumeration..."
 

@@ -43,5 +43,22 @@ probe_http_servers() {
     echo ""
     
     log_success "HTTP probe results saved to: $probe_output"
-    log_success "Total live servers found: $total_found"
+# Wildcard DNS Detection
+# Returns 0 if wildcard detected, 1 otherwise
+detect_wildcard() {
+    local domain=$1
+    local random_sub="wildcard-check-$(date +%s)-$RANDOM"
+    local test_domain="${random_sub}.${domain}"
+    
+    log_info "Checking for wildcard DNS on *.$domain..."
+    
+    # Resolve the random subdomain
+    if curl -s -m 5 -o /dev/null -w "%{http_code}" "http://${test_domain}" 2>/dev/null | grep -q "^[23]..$"; then
+        log_warning "Wildcard DNS detected! Results may contain false positives."
+        return 0
+    else
+        log_success "No wildcard DNS detected. Results are high fidelity."
+        return 1
+    fi
 }
+

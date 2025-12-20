@@ -73,6 +73,33 @@ EOF
 
     log_success "Detailed report saved to: $metrics_file"
     cat "$metrics_file"
+    
+    # Generate JSON Report for Interoperability
+    local json_file="$OUTPUT_DIR/${target}_report_${timestamp}.json"
+    
+    # Create JSON structure using jq
+    jq -n \
+        --arg target "$target" \
+        --arg timestamp "$timestamp" \
+        --arg execution_time "$duration" \
+        --arg unique_count "$total_unique" \
+        --arg mode "$([ "$parallel_mode" = true ] && echo "Parallel" || echo "Sequential")" \
+        '{
+            meta: {
+                tool: "SerphunterRecon",
+                version: "1.5",
+                timestamp: $timestamp,
+                execution_time_seconds: $execution_time,
+                mode: $mode
+            },
+            target: {
+                domain: $target,
+                total_subdomains: $unique_count
+            },
+            results: []
+        }' > "$json_file"
+        
+    log_success "JSON report saved to: $json_file"
 }
 
 recommendation_logic() {

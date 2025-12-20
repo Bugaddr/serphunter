@@ -1,0 +1,40 @@
+name: Security Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq bc
+        
+    - name: Code Quality Check (ShellCheck)
+      run: |
+        # Ensure scripts are syntactically correct
+        bash -n serphunter.sh
+        bash -n lib/*.sh
+        bash -n modules/*.sh
+        
+    - name: Run Unit Tests
+      run: |
+        chmod +x tests/*.sh
+        ./tests/test_basic.sh
+        
+    - name: Run Benchmarks (Performance Regression Testing)
+      run: |
+        # Run benchmarks to ensure no performance degradation
+        ./tests/run_benchmarks.sh
+        
+    - name: Docker Build
+      run: |
+        docker build -t serphunter:latest .
