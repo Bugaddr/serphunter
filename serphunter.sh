@@ -8,6 +8,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/core.sh"
 source "$SCRIPT_DIR/lib/network.sh"
 source "$SCRIPT_DIR/lib/report.sh"
+source "$SCRIPT_DIR/lib/monitor.sh" # Novelty
+source "$SCRIPT_DIR/modules/smart_permute.sh" # Novelty
 
 # Source modules
 for module in "$SCRIPT_DIR"/modules/*.sh; do
@@ -93,6 +95,15 @@ cat "$OUTPUT_DIR"/${TARGET}_*_${TIMESTAMP}.txt 2>/dev/null | sort -u > "$combine
 if [[ "$PROBE_HTTP" == true ]]; then
     probe_http_servers "$TARGET" "$combined_file" "$TIMESTAMP"
 fi
+
+# Novelty: Smart Pattern Recognition
+if [[ -f "$combined_file" ]]; then
+    run_smart_permute "$TARGET" "$combined_file"
+fi
+
+# Novelty: Temporal Monitoring
+init_monitoring
+compare_with_history "$TARGET" "$combined_file"
 
 END_TIME=$(date +%s)
 generate_metrics_report "$TARGET" "$TIMESTAMP" "$START_TIME" "$END_TIME" "$combined_file" "$PARALLEL_MODE"
