@@ -76,6 +76,8 @@ if [[ "$PARALLEL_MODE" == true ]]; then
     run_hackertarget "$TARGET" &
     run_wayback "$TARGET" &
     run_urlscan "$TARGET" &
+    run_rapiddns "$TARGET" &
+    run_subdomaincenter "$TARGET" &
     wait
 else
     run_crtsh "$TARGET"
@@ -86,6 +88,8 @@ else
     run_hackertarget "$TARGET"
     run_wayback "$TARGET"
     run_urlscan "$TARGET"
+    run_rapiddns "$TARGET"
+    run_subdomaincenter "$TARGET"
 fi
 
 # Post-Execution

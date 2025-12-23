@@ -34,6 +34,8 @@ SerphunterRecon integrates with the following sources for comprehensive subdomai
 | **HackerTarget** | Host Search | Medium |
 | **Wayback Machine** | Web Archive | High (Historical) |
 | **URLScan.io** | Web Scanner | Medium |
+| **RapidDNS** | DNS DB | Medium |
+| **Subdomain.center** | Aggregator API | Medium |
 
 ## Installation
 
