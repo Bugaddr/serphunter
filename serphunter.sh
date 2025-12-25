@@ -1,115 +1,188 @@
 #!/bin/bash
 
-# SerphunterRecon - Entry Point
-# Author: Security Researcher
+# SerphunterRecon v1.5 - Professional Subdomain Enumeration Framework
+# Entry Point / Execution Controller
+
+set -euo pipefail
+
+# Resolve script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source core libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/core.sh"
 source "$SCRIPT_DIR/lib/network.sh"
 source "$SCRIPT_DIR/lib/report.sh"
-source "$SCRIPT_DIR/lib/monitor.sh" # Novelty
-source "$SCRIPT_DIR/modules/smart_permute.sh" # Novelty
+source "$SCRIPT_DIR/lib/monitor.sh"
+source "$SCRIPT_DIR/lib/ratelimit.sh"
+source "$SCRIPT_DIR/lib/plugin.sh"
+source "$SCRIPT_DIR/lib/scope.sh"
+source "$SCRIPT_DIR/lib/cache.sh"
+source "$SCRIPT_DIR/lib/notify.sh"
+source "$SCRIPT_DIR/lib/html_report.sh"
 
-# Source modules
-for module in "$SCRIPT_DIR"/modules/*.sh; do
-    source "$module"
-done
+# Defaults
+TARGET=""
+TARGET_FILE=""
+PARALLEL_MODE=false
+PROBE_HTTP=false
+SCOPE_FILE=""
+GENERATE_HTML=false
+export TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
-# Global Variables from core are available
-
-# Help Function (Override)
+# Help
 show_help() {
     print_banner
     echo "Usage: $0 -d <domain> [OPTIONS]"
     echo ""
-    echo "Options:"
-    echo "  -d, --domain      Target domain for enumeration"
-    echo "  -p, --parallel    Run enumeration sources in parallel"
-    echo "  -hp, --http-probe Probe for live HTTP/HTTPS servers"
-    echo "  -h, --help        Show this help message"
+    echo "Target Options:"
+    echo "  -d, --domain       Single target domain"
+    echo "  -dL, --domain-list File containing list of domains (one per line)"
+    echo ""
+    echo "Execution Options:"
+    echo "  -p, --parallel     Run enumeration sources in parallel"
+    echo "  -hp, --http-probe  Probe for live HTTP/HTTPS servers"
+    echo "  --html             Generate styled HTML report"
+    echo ""
+    echo "Filtering Options:"
+    echo "  -s, --scope        Path to scope file (INI format)"
+    echo ""
+    echo "Information:"
+    echo "  --list-plugins     Show all installed plugins"
+    echo "  -h, --help         Show this help message"
+    echo "  -v, --version      Show version information"
     exit 0
 }
 
-# Parse Args
+show_version() {
+    echo "SerphunterRecon v1.5"
+    echo "Modules: $(ls "$SCRIPT_DIR/modules/"*.sh 2>/dev/null | wc -l) installed"
+    exit 0
+}
+
+# Parse Arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -d|--domain) TARGET="$2"; shift 2 ;;
-        -p|--parallel) PARALLEL_MODE=true; shift ;;
-        -hp|--http-probe) PROBE_HTTP=true; shift ;;
-        -h|--help) show_help ;;
-        *) log_error "Unknown option: $1"; show_help ;;
+        -d|--domain)       TARGET="$2"; shift 2 ;;
+        -dL|--domain-list) TARGET_FILE="$2"; shift 2 ;;
+        -p|--parallel)     PARALLEL_MODE=true; shift ;;
+        -hp|--http-probe)  PROBE_HTTP=true; shift ;;
+        -s|--scope)        SCOPE_FILE="$2"; shift 2 ;;
+        --html)            GENERATE_HTML=true; shift ;;
+        --list-plugins)    init_plugin_system; list_plugins; exit 0 ;;
+        -v|--version)      show_version ;;
+        -h|--help)         show_help ;;
+        *)                 log_error "Unknown option: $1"; show_help ;;
     esac
 done
 
-if [[ -z "$TARGET" ]]; then
+# Validate input
+if [[ -z "$TARGET" && -z "$TARGET_FILE" ]]; then
     show_help
 fi
 
-# Initialization
-check_requirements
-load_config
-mkdir -p "$OUTPUT_DIR"
-START_TIME=$(date +%s)
+# ──────────────────────────────────────────────
+# Core scan function for a single domain
+# ──────────────────────────────────────────────
+scan_domain() {
+    local domain=$1
+    
+    log_info "═══════════════════════════════════════"
+    log_info "Scanning: $domain"
+    log_info "═══════════════════════════════════════"
+    
+    local domain_start=$(date +%s)
+    
+    # Execute all plugins
+    execute_plugins "$domain" "$PARALLEL_MODE"
+    
+    # Combine results
+    local combined_file="$OUTPUT_DIR/${domain}_combined_${TIMESTAMP}.txt"
+    cat "$OUTPUT_DIR"/${domain}_*_${TIMESTAMP}.txt 2>/dev/null | sort -u > "$combined_file"
 
-print_banner
-log_info "Target: $TARGET"
-if [[ "$PARALLEL_MODE" == true ]]; then
-    log_info "Mode: Parallel (Max $MAX_JOBS jobs)"
-else
-    log_info "Mode: Sequential"
-fi
+    # Apply scope filter if configured
+    if [[ -n "$SCOPE_FILE" ]]; then
+        local filtered_file="$OUTPUT_DIR/${domain}_scoped_${TIMESTAMP}.txt"
+        apply_scope_filter "$combined_file" "$filtered_file"
+        combined_file="$filtered_file"
+    fi
 
-# Wildcard Check
-detect_wildcard "$TARGET"
-WILDCARD_ACTIVE=$?
+    # Smart Pattern Recognition
+    if [[ -f "$combined_file" ]]; then
+        run_smart_permute "$domain" "$combined_file"
+    fi
 
-# Execution
-log_info "Starting enumeration..."
+    # HTTP Probing
+    if [[ "$PROBE_HTTP" == true ]]; then
+        probe_http_servers "$domain" "$combined_file" "$TIMESTAMP"
+    fi
 
-if [[ "$PARALLEL_MODE" == true ]]; then
-    run_crtsh "$TARGET" &
-    run_otx "$TARGET" &
-    run_certspotter "$TARGET" &
-    run_virustotal "$TARGET" &
-    run_shodan "$TARGET" &
-    run_hackertarget "$TARGET" &
-    run_wayback "$TARGET" &
-    run_urlscan "$TARGET" &
-    run_rapiddns "$TARGET" &
-    run_subdomaincenter "$TARGET" &
-    wait
-else
-    run_crtsh "$TARGET"
-    run_otx "$TARGET"
-    run_certspotter "$TARGET"
-    run_virustotal "$TARGET"
-    run_shodan "$TARGET"
-    run_hackertarget "$TARGET"
-    run_wayback "$TARGET"
-    run_urlscan "$TARGET"
-    run_rapiddns "$TARGET"
-    run_subdomaincenter "$TARGET"
-fi
+    # Temporal Monitoring
+    compare_with_history "$domain" "$combined_file"
 
-# Post-Execution
-combined_file="$OUTPUT_DIR/${TARGET}_combined_${TIMESTAMP}.txt"
-cat "$OUTPUT_DIR"/${TARGET}_*_${TIMESTAMP}.txt 2>/dev/null | sort -u > "$combined_file"
+    # Calculate duration
+    local domain_end=$(date +%s)
+    local duration=$((domain_end - domain_start))
 
-if [[ "$PROBE_HTTP" == true ]]; then
-    probe_http_servers "$TARGET" "$combined_file" "$TIMESTAMP"
-fi
+    # Generate reports
+    generate_metrics_report "$domain" "$TIMESTAMP" "$domain_start" "$domain_end" "$combined_file" "$PARALLEL_MODE"
 
-# Novelty: Smart Pattern Recognition
-if [[ -f "$combined_file" ]]; then
-    run_smart_permute "$TARGET" "$combined_file"
-fi
+    if [[ "$GENERATE_HTML" == true ]]; then
+        generate_html_report "$domain" "$TIMESTAMP" "$combined_file" "$duration"
+    fi
 
-# Novelty: Temporal Monitoring
-init_monitoring
-compare_with_history "$TARGET" "$combined_file"
+    # Send notifications
+    local total=$(wc -l < "$combined_file")
+    notify_all "$domain" "$total" "0" "$duration"
+    
+    log_success "Scan complete for $domain ($total subdomains in ${duration}s)"
+}
 
-END_TIME=$(date +%s)
-generate_metrics_report "$TARGET" "$TIMESTAMP" "$START_TIME" "$END_TIME" "$combined_file" "$PARALLEL_MODE"
+# ──────────────────────────────────────────────
+# Main Execution
+# ──────────────────────────────────────────────
+main() {
+    print_banner
+    
+    # Initialize subsystems
+    check_requirements
+    load_config
+    mkdir -p "$OUTPUT_DIR"
+    init_rate_limiter
+    init_plugin_system
+    init_cache
+    init_monitoring
+    load_notification_config
+    
+    # Load scope if provided
+    [[ -n "$SCOPE_FILE" ]] && load_scope "$SCOPE_FILE"
+    
+    # Wildcard check
+    if [[ -n "$TARGET" ]]; then
+        detect_wildcard "$TARGET" || true
+    fi
+    
+    log_info "Mode: $([ "$PARALLEL_MODE" = true ] && echo "Parallel" || echo "Sequential")"
+    
+    # Execute scans
+    if [[ -n "$TARGET_FILE" ]]; then
+        # Multi-target mode
+        local domain_count=$(wc -l < "$TARGET_FILE")
+        log_info "Multi-target mode: $domain_count domains from $TARGET_FILE"
+        
+        while IFS= read -r domain; do
+            [[ -z "$domain" || "$domain" == \#* ]] && continue
+            scan_domain "$domain"
+        done < "$TARGET_FILE"
+    else
+        # Single target mode
+        scan_domain "$TARGET"
+    fi
+    
+    # Cleanup
+    cleanup_rate_limiter
+    cache_gc
+    
+    log_success "All scans complete!"
+}
 
-log_success "Enumeration complete!"
+main
