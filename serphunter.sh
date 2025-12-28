@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# SerphunterRecon v1.5 - Professional Subdomain Enumeration Framework
+# SerphunterRecon v2.0 - Intelligent Attack Surface Analysis Framework
 # Entry Point / Execution Controller
 
 set -euo pipefail
@@ -19,6 +19,10 @@ source "$SCRIPT_DIR/lib/scope.sh"
 source "$SCRIPT_DIR/lib/cache.sh"
 source "$SCRIPT_DIR/lib/notify.sh"
 source "$SCRIPT_DIR/lib/html_report.sh"
+source "$SCRIPT_DIR/lib/fingerprint.sh"
+source "$SCRIPT_DIR/lib/risk.sh"
+source "$SCRIPT_DIR/lib/markov.sh"
+source "$SCRIPT_DIR/lib/logger.sh"
 
 # Defaults
 TARGET=""
@@ -27,6 +31,11 @@ PARALLEL_MODE=false
 PROBE_HTTP=false
 SCOPE_FILE=""
 GENERATE_HTML=false
+RUN_TAKEOVER=false
+RUN_FINGERPRINT=false
+RUN_RISK=false
+RUN_MARKOV=false
+RUN_ALL_ADVANCED=false
 export TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # Help
@@ -43,6 +52,13 @@ show_help() {
     echo "  -hp, --http-probe  Probe for live HTTP/HTTPS servers"
     echo "  --html             Generate styled HTML report"
     echo ""
+    echo "Analysis Options:"
+    echo "  --takeover         Check for subdomain takeover vulnerabilities"
+    echo "  --fingerprint      Run technology fingerprinting"
+    echo "  --risk             Run risk scoring engine"
+    echo "  --markov           Run Markov chain prediction"
+    echo "  --full             Enable all advanced analysis"
+    echo ""
     echo "Filtering Options:"
     echo "  -s, --scope        Path to scope file (INI format)"
     echo ""
@@ -54,7 +70,7 @@ show_help() {
 }
 
 show_version() {
-    echo "SerphunterRecon v1.5"
+    echo "SerphunterRecon v2.0"
     echo "Modules: $(ls "$SCRIPT_DIR/modules/"*.sh 2>/dev/null | wc -l) installed"
     exit 0
 }
@@ -68,6 +84,11 @@ while [[ $# -gt 0 ]]; do
         -hp|--http-probe)  PROBE_HTTP=true; shift ;;
         -s|--scope)        SCOPE_FILE="$2"; shift 2 ;;
         --html)            GENERATE_HTML=true; shift ;;
+        --takeover)        RUN_TAKEOVER=true; shift ;;
+        --fingerprint)     RUN_FINGERPRINT=true; shift ;;
+        --risk)            RUN_RISK=true; shift ;;
+        --markov)          RUN_MARKOV=true; shift ;;
+        --full)            RUN_ALL_ADVANCED=true; shift ;;
         --list-plugins)    init_plugin_system; list_plugins; exit 0 ;;
         -v|--version)      show_version ;;
         -h|--help)         show_help ;;
@@ -111,6 +132,28 @@ scan_domain() {
         run_smart_permute "$domain" "$combined_file"
     fi
 
+    # ── Advanced Analysis Pipeline ──
+    
+    # Markov Chain Prediction
+    if [[ "$RUN_MARKOV" == true || "$RUN_ALL_ADVANCED" == true ]]; then
+        run_markov_prediction "$domain" "$combined_file" 50
+    fi
+    
+    # Subdomain Takeover Detection
+    if [[ "$RUN_TAKEOVER" == true || "$RUN_ALL_ADVANCED" == true ]]; then
+        run_takeover "$domain" "$combined_file"
+    fi
+    
+    # Technology Fingerprinting
+    if [[ "$RUN_FINGERPRINT" == true || "$RUN_ALL_ADVANCED" == true ]]; then
+        run_fingerprint "$domain" "$combined_file"
+    fi
+    
+    # Risk Scoring
+    if [[ "$RUN_RISK" == true || "$RUN_ALL_ADVANCED" == true ]]; then
+        run_risk_assessment "$domain" "$combined_file"
+    fi
+
     # HTTP Probing
     if [[ "$PROBE_HTTP" == true ]]; then
         probe_http_servers "$domain" "$combined_file" "$TIMESTAMP"
@@ -147,11 +190,21 @@ main() {
     check_requirements
     load_config
     mkdir -p "$OUTPUT_DIR"
+    init_logger "$OUTPUT_DIR"
     init_rate_limiter
     init_plugin_system
     init_cache
     init_monitoring
     load_notification_config
+    
+    # Enable all advanced if --full is set
+    if [[ "$RUN_ALL_ADVANCED" == true ]]; then
+        RUN_TAKEOVER=true
+        RUN_FINGERPRINT=true
+        RUN_RISK=true
+        RUN_MARKOV=true
+        GENERATE_HTML=true
+    fi
     
     # Load scope if provided
     [[ -n "$SCOPE_FILE" ]] && load_scope "$SCOPE_FILE"
@@ -181,6 +234,7 @@ main() {
     # Cleanup
     cleanup_rate_limiter
     cache_gc
+    rotate_logs
     
     log_success "All scans complete!"
 }
