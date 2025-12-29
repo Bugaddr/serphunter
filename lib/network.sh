@@ -43,6 +43,8 @@ probe_http_servers() {
     echo ""
     
     log_success "HTTP probe results saved to: $probe_output"
+}
+
 # Wildcard DNS Detection
 # Returns 0 if wildcard detected, 1 otherwise
 detect_wildcard() {
