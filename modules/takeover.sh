@@ -66,7 +66,7 @@ run_takeover() {
                 if echo "$body" | grep -qi "$fingerprint" 2>/dev/null; then
                     echo "[VULNERABLE] $subdomain -> $cname ($service_pattern)" >> "$output_file"
                     log_warning "TAKEOVER POSSIBLE: $subdomain -> $cname"
-                    ((vuln_count++))
+                    ((vuln_count++)) || true
                 else
                     echo "[CNAME MATCH] $subdomain -> $cname (not confirmed)" >> "$output_file"
                 fi

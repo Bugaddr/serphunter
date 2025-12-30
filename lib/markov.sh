@@ -46,7 +46,7 @@ train_markov_model() {
             MARKOV_CHAIN["$key"]=$(( ${MARKOV_CHAIN["$key"]:-0} + 1 ))
         done
         
-        ((training_count++))
+        ((training_count++)) || true
     done < "$input_file"
     
     log_success "Markov model trained on $training_count subdomains (${#MARKOV_CHAIN[@]} transitions)"
@@ -144,7 +144,7 @@ run_markov_prediction() {
     local max_attempts=$((num_candidates * 3))
     
     while [[ $generated -lt $num_candidates && $attempts -lt $max_attempts ]]; do
-        ((attempts++))
+        ((attempts++)) || true
         
         local candidate=$(_generate_candidate)
         [[ -z "$candidate" ]] && continue
@@ -155,12 +155,12 @@ run_markov_prediction() {
         grep -q "^${full_domain}$" "$combined_file" 2>/dev/null && continue
         
         echo "$full_domain" >> "$output_file"
-        ((generated++))
+        ((generated++)) || true
         
         # Active verification
         if curl -s -m 3 -o /dev/null -w "%{http_code}" "http://${full_domain}" 2>/dev/null | grep -q "^[23]..$"; then
             echo "$full_domain" >> "$verified_file"
-            ((verified++))
+            ((verified++)) || true
             log_success "MARKOV HIT: $full_domain is live!"
         fi
     done

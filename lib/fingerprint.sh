@@ -89,7 +89,7 @@ run_fingerprint() {
         if [[ -n "$result" ]]; then
             echo "$result" >> "$output_file"
         fi
-        ((scanned++))
+        ((scanned++)) || true
         echo -ne "\r[*] Fingerprinted: $scanned"
     done < "$combined_file"
     echo ""

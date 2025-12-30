@@ -36,7 +36,7 @@ probe_http_servers() {
         [[ -z "$subdomain" ]] && continue
         
         if probe_subdomain "$subdomain" "$probe_output" "$HTTP_TIMEOUT"; then
-            ((total_found++))
+            ((total_found++)) || true
             echo -ne "\r${GREEN}[+] Live servers found: $total_found${NC}"
         fi
     done < "$combined_file"

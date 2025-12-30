@@ -79,12 +79,12 @@ apply_scope_filter() {
     
     while IFS= read -r subdomain; do
         [[ -z "$subdomain" ]] && continue
-        ((total_count++))
+        ((total_count++)) || true
         
         if is_in_scope "$subdomain"; then
             echo "$subdomain" >> "$output_file"
         else
-            ((filtered_count++))
+            ((filtered_count++)) || true
         fi
     done < "$input_file"
     

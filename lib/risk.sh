@@ -106,10 +106,10 @@ run_risk_assessment() {
         printf "%-50s %-10s %-10s\n" "$subdomain" "$score" "$risk" >> "$output_file"
         
         case "$risk" in
-            CRITICAL) ((critical++)) ;;
-            HIGH)     ((high++)) ;;
-            MEDIUM)   ((medium++)) ;;
-            LOW)      ((low++)) ;;
+            CRITICAL) ((critical++)) || true ;;
+            HIGH)     ((high++)) || true ;;
+            MEDIUM)   ((medium++)) || true ;;
+            LOW)      ((low++)) || true ;;
         esac
     done < "$combined_file"
     

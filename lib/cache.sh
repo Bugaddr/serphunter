@@ -90,7 +90,7 @@ cache_gc() {
         if [[ $age -gt $CACHE_TTL ]]; then
             local base="${meta_file%.meta}"
             rm -f "$base.cache" "$base.meta"
-            ((purged++))
+            ((purged++)) || true
         fi
     done
     

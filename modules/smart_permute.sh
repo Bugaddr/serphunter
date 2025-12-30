@@ -43,7 +43,7 @@ run_smart_permute() {
     while read -r candidate; do
         if curl -s -m 3 -o /dev/null -w "%{http_code}" "http://${candidate}" 2>/dev/null | grep -q "^[23]..$"; then
             echo "$candidate" >> "$confirmed_file"
-            ((verified_count++))
+            ((verified_count++)) || true
         fi
     done < "$output_file"
     

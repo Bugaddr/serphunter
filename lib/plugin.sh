@@ -33,7 +33,7 @@ discover_plugins() {
            grep -q "^${func_name} ()" "$plugin_file" 2>/dev/null; then
             source "$plugin_file"
             LOADED_PLUGINS+=("$func_name")
-            ((count++))
+            ((count++)) || true
         else
             log_warning "Skipping invalid plugin: $plugin_name (missing $func_name function)"
         fi
