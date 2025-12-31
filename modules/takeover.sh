@@ -40,7 +40,11 @@ declare -A TAKEOVER_SIGNATURES=(
 
 run_takeover() {
     local target=$1
-    local combined_file=$2
+    local combined_file=${2:-}
+    
+    if [[ -z "$combined_file" || ! -f "$combined_file" ]]; then
+        return 0  # Skip when called as plugin without combined file
+    fi
     local output_file="$OUTPUT_DIR/${target}_takeover_${TIMESTAMP}.txt"
     local vuln_count=0
     

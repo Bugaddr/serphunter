@@ -5,7 +5,11 @@
 
 run_smart_permute() {
     local target=$1
-    local existing_results=$2
+    local existing_results=${2:-}
+    
+    if [[ -z "$existing_results" || ! -f "$existing_results" ]]; then
+        return 0  # Skip when called as plugin without combined file
+    fi
     local output_file="$OUTPUT_DIR/${target}_smart_permute_${TIMESTAMP}.txt"
     
     log_info "Running Smart Pattern Recognition (AI Heuristics)..."
