@@ -78,11 +78,17 @@ show_version() {
 # Parse Arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -d|--domain)       TARGET="$2"; shift 2 ;;
-        -dL|--domain-list) TARGET_FILE="$2"; shift 2 ;;
+        -d|--domain)
+            [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
+            TARGET="$2"; shift 2 ;;
+        -dL|--domain-list)
+            [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
+            TARGET_FILE="$2"; shift 2 ;;
         -p|--parallel)     PARALLEL_MODE=true; shift ;;
         -hp|--http-probe)  PROBE_HTTP=true; shift ;;
-        -s|--scope)        SCOPE_FILE="$2"; shift 2 ;;
+        -s|--scope)
+            [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
+            SCOPE_FILE="$2"; shift 2 ;;
         --html)            GENERATE_HTML=true; shift ;;
         --takeover)        RUN_TAKEOVER=true; shift ;;
         --fingerprint)     RUN_FINGERPRINT=true; shift ;;
@@ -99,6 +105,12 @@ done
 # Validate input
 if [[ -z "$TARGET" && -z "$TARGET_FILE" ]]; then
     show_help
+fi
+
+# Validate domain list file exists
+if [[ -n "$TARGET_FILE" && ! -f "$TARGET_FILE" ]]; then
+    log_error "Domain list file not found: $TARGET_FILE"
+    exit 1
 fi
 
 # ──────────────────────────────────────────────
@@ -217,6 +229,11 @@ main() {
     log_info "Mode: $([ "$PARALLEL_MODE" = true ] && echo "Parallel" || echo "Sequential")"
     
     # Execute scans
+    if [[ -n "$TARGET" ]]; then
+        # Single target mode
+        scan_domain "$TARGET"
+    fi
+    
     if [[ -n "$TARGET_FILE" ]]; then
         # Multi-target mode
         local domain_count=$(wc -l < "$TARGET_FILE")
@@ -226,9 +243,6 @@ main() {
             [[ -z "$domain" || "$domain" == \#* ]] && continue
             scan_domain "$domain"
         done < "$TARGET_FILE"
-    else
-        # Single target mode
-        scan_domain "$TARGET"
     fi
     
     # Cleanup
