@@ -28,6 +28,22 @@ discover_plugins() {
         local plugin_name=$(basename "$plugin_file" .sh)
         local func_name="run_${plugin_name}"
         
+        # Apply --only filter: skip plugins not in the list
+        if [[ -n "${ONLY_PLUGINS:-}" ]]; then
+            if ! echo ",$ONLY_PLUGINS," | grep -q ",$plugin_name,"; then
+                log_debug "Skipping $plugin_name (not in --only list)"
+                continue
+            fi
+        fi
+        
+        # Apply --exclude filter: skip plugins in the list
+        if [[ -n "${EXCLUDE_PLUGINS:-}" ]]; then
+            if echo ",$EXCLUDE_PLUGINS," | grep -q ",$plugin_name,"; then
+                log_debug "Skipping $plugin_name (in --exclude list)"
+                continue
+            fi
+        fi
+        
         # Validate plugin contract: must define run_<name>() function
         if grep -q "^${func_name}()" "$plugin_file" 2>/dev/null || \
            grep -q "^${func_name} ()" "$plugin_file" 2>/dev/null; then
@@ -49,7 +65,16 @@ execute_plugins() {
     
     log_info "Executing ${#LOADED_PLUGINS[@]} plugins against $target..."
     
+    # Dry-run mode: show what would run
+    if [[ "${DRY_RUN:-false}" == true ]]; then
+        for func in "${LOADED_PLUGINS[@]}"; do
+            log_info "[DRY-RUN] Would execute: $func $target"
+        done
+        return 0
+    fi
+    
     for func in "${LOADED_PLUGINS[@]}"; do
+        log_debug "Executing plugin: $func"
         if [[ "$parallel" == true ]]; then
             "$func" "$target" &
         else

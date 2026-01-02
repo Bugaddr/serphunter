@@ -19,12 +19,22 @@ init_logger() {
     LOG_FILE="${log_dir}/serphunter_$(date +%Y%m%d_%H%M%S).log"
     mkdir -p "$log_dir"
     
+    # Set log level based on runtime flags
+    if [[ "${VERBOSE_MODE:-false}" == true ]]; then
+        LOG_LEVEL=0  # DEBUG
+    elif [[ "${QUIET_MODE:-false}" == true ]]; then
+        LOG_LEVEL=3  # ERROR only
+    else
+        LOG_LEVEL=1  # INFO (default)
+    fi
+    
     # Write log header
     {
         echo "============================================"
         echo "SerphunterRecon Log"
         echo "Started: $(date --iso-8601=seconds)"
         echo "PID: $$"
+        echo "Log Level: $LOG_LEVEL"
         echo "============================================"
     } > "$LOG_FILE"
 }
@@ -44,13 +54,15 @@ _log() {
         printf "$LOG_FORMAT" "$timestamp" "$level" "$message" >> "$LOG_FILE"
     fi
     
-    # Write to console with colors
-    case "$level" in
-        DEBUG) echo -e "${BLUE}[DEBUG]${NC} $message" ;;
-        INFO)  echo -e "${GREEN}[INFO]${NC} $message" ;;
-        WARN)  echo -e "${YELLOW}[WARN]${NC} $message" ;;
-        ERROR) echo -e "${RED}[ERROR]${NC} $message" ;;
-    esac
+    # Write to console with colors (respect quiet mode)
+    if [[ "${QUIET_MODE:-false}" != true ]] || [[ "$level" == "ERROR" || "$level" == "WARN" ]]; then
+        case "$level" in
+            DEBUG) echo -e "${BLUE}[DEBUG]${NC} $message" ;;
+            INFO)  echo -e "${GREEN}[INFO]${NC} $message" ;;
+            WARN)  echo -e "${YELLOW}[WARN]${NC} $message" ;;
+            ERROR) echo -e "${RED}[ERROR]${NC} $message" ;;
+        esac
+    fi
 }
 
 log_debug() { _log "DEBUG" "$@"; }

@@ -51,6 +51,10 @@ show_help() {
     echo "  -p, --parallel     Run enumeration sources in parallel"
     echo "  -hp, --http-probe  Probe for live HTTP/HTTPS servers"
     echo "  --html             Generate styled HTML report"
+    echo "  -j, --jobs <n>     Max parallel jobs (default: 5)"
+    echo "  -t, --timeout <s>  HTTP timeout per request in seconds (default: 10)"
+    echo "  --rate <n>         Max requests per rate-limit window (default: 5)"
+    echo "  --dry-run          Show what would run without executing"
     echo ""
     echo "Analysis Options:"
     echo "  --takeover         Check for subdomain takeover vulnerabilities"
@@ -59,13 +63,24 @@ show_help() {
     echo "  --markov           Run Markov chain prediction"
     echo "  --full             Enable all advanced analysis"
     echo ""
+    echo "Output Options:"
+    echo "  -o, --output <dir> Custom output directory (default: results/)"
+    echo "  -v, --verbose      Enable debug-level output"
+    echo "  -q, --quiet        Suppress all output except errors"
+    echo "  --no-color         Disable colored output"
+    echo "  --no-cache         Disable result caching"
+    echo ""
+    echo "Plugin Options:"
+    echo "  --exclude <list>   Comma-separated plugins to skip"
+    echo "  --only <list>      Comma-separated plugins to run exclusively"
+    echo "  --list-plugins     Show all installed plugins"
+    echo ""
     echo "Filtering Options:"
     echo "  -s, --scope        Path to scope file (INI format)"
     echo ""
     echo "Information:"
-    echo "  --list-plugins     Show all installed plugins"
     echo "  -h, --help         Show this help message"
-    echo "  -v, --version      Show version information"
+    echo "  -V, --version      Show version information"
     exit 0
 }
 
@@ -89,14 +104,37 @@ while [[ $# -gt 0 ]]; do
         -s|--scope)
             [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
             SCOPE_FILE="$2"; shift 2 ;;
+        -o|--output)
+            [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
+            OUTPUT_DIR="$2"; shift 2 ;;
+        -t|--timeout)
+            [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
+            HTTP_TIMEOUT="$2"; shift 2 ;;
+        -j|--jobs)
+            [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
+            MAX_JOBS="$2"; shift 2 ;;
+        --rate)
+            [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
+            DEFAULT_RATE="$2"; shift 2 ;;
+        --exclude)
+            [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
+            EXCLUDE_PLUGINS="$2"; shift 2 ;;
+        --only)
+            [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
+            ONLY_PLUGINS="$2"; shift 2 ;;
         --html)            GENERATE_HTML=true; shift ;;
         --takeover)        RUN_TAKEOVER=true; shift ;;
         --fingerprint)     RUN_FINGERPRINT=true; shift ;;
         --risk)            RUN_RISK=true; shift ;;
         --markov)          RUN_MARKOV=true; shift ;;
         --full)            RUN_ALL_ADVANCED=true; shift ;;
+        -v|--verbose)      VERBOSE_MODE=true; shift ;;
+        -q|--quiet)        QUIET_MODE=true; shift ;;
+        --no-color)        NO_COLOR=true; _apply_no_color; shift ;;
+        --no-cache)        NO_CACHE=true; shift ;;
+        --dry-run)         DRY_RUN=true; shift ;;
         --list-plugins)    init_plugin_system; list_plugins; exit 0 ;;
-        -v|--version)      show_version ;;
+        -V|--version)      show_version ;;
         -h|--help)         show_help ;;
         *)                 log_error "Unknown option: $1"; show_help ;;
     esac
@@ -198,6 +236,22 @@ scan_domain() {
 main() {
     print_banner
     
+    # Verbose: show configuration
+    log_debug "Configuration:"
+    log_debug "  Target: ${TARGET:-none}"
+    log_debug "  Target File: ${TARGET_FILE:-none}"
+    log_debug "  Output Dir: $OUTPUT_DIR"
+    log_debug "  Parallel: $PARALLEL_MODE"
+    log_debug "  HTTP Timeout: ${HTTP_TIMEOUT}s"
+    log_debug "  Max Jobs: $MAX_JOBS"
+    log_debug "  Verbose: $VERBOSE_MODE"
+    log_debug "  Quiet: $QUIET_MODE"
+    log_debug "  No Color: $NO_COLOR"
+    log_debug "  No Cache: $NO_CACHE"
+    log_debug "  Dry Run: $DRY_RUN"
+    log_debug "  Exclude Plugins: ${EXCLUDE_PLUGINS:-none}"
+    log_debug "  Only Plugins: ${ONLY_PLUGINS:-none}"
+    
     # Initialize subsystems
     check_requirements
     load_config
@@ -205,7 +259,13 @@ main() {
     init_logger "$OUTPUT_DIR"
     init_rate_limiter
     init_plugin_system
-    init_cache
+    
+    if [[ "$NO_CACHE" != true ]]; then
+        init_cache
+    else
+        log_debug "Cache disabled via --no-cache"
+    fi
+    
     init_monitoring
     load_notification_config
     
