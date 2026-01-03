@@ -157,22 +157,34 @@ fi
 scan_domain() {
     local domain=$1
     
+    # ── Create per-domain output structure ──
+    local DOMAIN_DIR="${BASE_OUTPUT_DIR}/${domain}"
+    local SOURCES_DIR="${DOMAIN_DIR}/sources"
+    local REPORTS_DIR="${DOMAIN_DIR}/reports"
+    local ANALYSIS_DIR="${DOMAIN_DIR}/analysis"
+    
+    mkdir -p "$SOURCES_DIR" "$REPORTS_DIR" "$ANALYSIS_DIR"
+    
+    log_debug "Output structure: $DOMAIN_DIR/{sources,reports,analysis}"
+    
     log_info "═══════════════════════════════════════"
     log_info "Scanning: $domain"
     log_info "═══════════════════════════════════════"
     
     local domain_start=$(date +%s)
     
-    # Execute all plugins
+    # ── Phase 1: Enumeration (output to sources/) ──
+    OUTPUT_DIR="$SOURCES_DIR"
     execute_plugins "$domain" "$PARALLEL_MODE"
     
-    # Combine results
-    local combined_file="$OUTPUT_DIR/${domain}_combined_${TIMESTAMP}.txt"
-    cat "$OUTPUT_DIR"/${domain}_*_${TIMESTAMP}.txt 2>/dev/null | sort -u > "$combined_file"
+    # ── Phase 2: Combine results ──
+    OUTPUT_DIR="$ANALYSIS_DIR"
+    local combined_file="$ANALYSIS_DIR/${domain}_combined_${TIMESTAMP}.txt"
+    cat "$SOURCES_DIR"/${domain}_*_${TIMESTAMP}.txt 2>/dev/null | sort -u > "$combined_file"
 
     # Apply scope filter if configured
     if [[ -n "$SCOPE_FILE" ]]; then
-        local filtered_file="$OUTPUT_DIR/${domain}_scoped_${TIMESTAMP}.txt"
+        local filtered_file="$ANALYSIS_DIR/${domain}_scoped_${TIMESTAMP}.txt"
         apply_scope_filter "$combined_file" "$filtered_file"
         combined_file="$filtered_file"
     fi
@@ -182,7 +194,7 @@ scan_domain() {
         run_smart_permute "$domain" "$combined_file"
     fi
 
-    # ── Advanced Analysis Pipeline ──
+    # ── Phase 3: Advanced Analysis Pipeline ──
     
     # Markov Chain Prediction
     if [[ "$RUN_MARKOV" == true || "$RUN_ALL_ADVANCED" == true ]]; then
@@ -216,7 +228,8 @@ scan_domain() {
     local domain_end=$(date +%s)
     local duration=$((domain_end - domain_start))
 
-    # Generate reports
+    # ── Phase 4: Reports (output to reports/) ──
+    OUTPUT_DIR="$REPORTS_DIR"
     generate_metrics_report "$domain" "$TIMESTAMP" "$domain_start" "$domain_end" "$combined_file" "$PARALLEL_MODE"
 
     if [[ "$GENERATE_HTML" == true ]]; then
@@ -228,6 +241,7 @@ scan_domain() {
     notify_all "$domain" "$total" "0" "$duration"
     
     log_success "Scan complete for $domain ($total subdomains in ${duration}s)"
+    log_info "Results saved to: $DOMAIN_DIR/"
 }
 
 # ──────────────────────────────────────────────
@@ -236,11 +250,15 @@ scan_domain() {
 main() {
     print_banner
     
+    # Set base output directory (preserved across scan_domain calls)
+    BASE_OUTPUT_DIR="$OUTPUT_DIR"
+    local LOGS_DIR="${BASE_OUTPUT_DIR}/logs"
+    
     # Verbose: show configuration
     log_debug "Configuration:"
     log_debug "  Target: ${TARGET:-none}"
     log_debug "  Target File: ${TARGET_FILE:-none}"
-    log_debug "  Output Dir: $OUTPUT_DIR"
+    log_debug "  Output Dir: $BASE_OUTPUT_DIR"
     log_debug "  Parallel: $PARALLEL_MODE"
     log_debug "  HTTP Timeout: ${HTTP_TIMEOUT}s"
     log_debug "  Max Jobs: $MAX_JOBS"
@@ -255,8 +273,8 @@ main() {
     # Initialize subsystems
     check_requirements
     load_config
-    mkdir -p "$OUTPUT_DIR"
-    init_logger "$OUTPUT_DIR"
+    mkdir -p "$BASE_OUTPUT_DIR" "$LOGS_DIR"
+    init_logger "$LOGS_DIR"
     init_rate_limiter
     init_plugin_system
     

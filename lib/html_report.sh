@@ -64,7 +64,7 @@ HEADER
             <div class="label">Scan Duration</div>
         </div>
         <div class="stat-card">
-            <div class="number">$(ls "$OUTPUT_DIR"/${target}_*_${timestamp}.txt 2>/dev/null | wc -l)</div>
+            <div class="number">$(ls "${BASE_OUTPUT_DIR:-$OUTPUT_DIR}/${target}/sources"/${target}_*_${timestamp}.txt 2>/dev/null | wc -l)</div>
             <div class="label">Sources Queried</div>
         </div>
     </div>

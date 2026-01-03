@@ -18,9 +18,13 @@ generate_metrics_report() {
     # Count unique subdomains
     local total_unique=$(cat "$combined_file" 2>/dev/null | wc -l)
     
+    # Locate source files (check sources/ subdir first, then OUTPUT_DIR)
+    local sources_dir="${BASE_OUTPUT_DIR:-$OUTPUT_DIR}/${target}/sources"
+    [[ ! -d "$sources_dir" ]] && sources_dir="$OUTPUT_DIR"
+    
     # Gather source stats
     local stats_block=""
-    for file in "$OUTPUT_DIR"/${target}_*_${timestamp}.txt; do
+    for file in "$sources_dir"/${target}_*_${timestamp}.txt; do
         if [[ "$file" != *"$combined_file"* && "$file" != *metrics* && "$file" != *probe* ]]; then
             local source_name=$(basename "$file" | sed "s/^${target}_//; s/_${timestamp}.txt//")
             local count=$(cat "$file" 2>/dev/null | wc -l)
