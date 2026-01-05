@@ -29,6 +29,10 @@ export HTTP_TIMEOUT=10
 export EXCLUDE_PLUGINS=""
 export ONLY_PLUGINS=""
 
+# ── Recon Mode ──
+export RECON_MODE="passive"
+export WORDLIST=""
+
 # ── API Keys ──
 export VIRUSTOTAL_API_KEY=""
 export SHODAN_API_KEY=""

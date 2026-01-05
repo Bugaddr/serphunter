@@ -47,6 +47,12 @@ show_help() {
     echo "  -d, --domain       Single target domain"
     echo "  -dL, --domain-list File containing list of domains (one per line)"
     echo ""
+    echo "Recon Mode:"
+    echo "  --passive          Run passive recon only (default, API queries)"
+    echo "  --active           Run active recon only (DNS brute-force, port scan)"
+    echo "  --recon <mode>     Set recon mode: passive, active, or all"
+    echo "  -w, --wordlist     Custom wordlist for DNS brute-force"
+    echo ""
     echo "Execution Options:"
     echo "  -p, --parallel     Run enumeration sources in parallel"
     echo "  -hp, --http-probe  Probe for live HTTP/HTTPS servers"
@@ -86,7 +92,9 @@ show_help() {
 
 show_version() {
     echo "SerphunterRecon v2.0"
-    echo "Modules: $(ls "$SCRIPT_DIR/modules/"*.sh 2>/dev/null | wc -l) installed"
+    local passive_count=$(ls "$SCRIPT_DIR/modules/passive/"*.sh 2>/dev/null | wc -l)
+    local active_count=$(ls "$SCRIPT_DIR/modules/active/"*.sh 2>/dev/null | wc -l)
+    echo "Modules: $passive_count passive, $active_count active"
     exit 0
 }
 
@@ -128,6 +136,14 @@ while [[ $# -gt 0 ]]; do
         --risk)            RUN_RISK=true; shift ;;
         --markov)          RUN_MARKOV=true; shift ;;
         --full)            RUN_ALL_ADVANCED=true; shift ;;
+        --passive)         RECON_MODE="passive"; shift ;;
+        --active)          RECON_MODE="active"; shift ;;
+        --recon)
+            [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
+            RECON_MODE="$2"; shift 2 ;;
+        -w|--wordlist)
+            [[ $# -lt 2 ]] && { log_error "Option $1 requires an argument"; show_help; }
+            WORDLIST="$2"; shift 2 ;;
         -v|--verbose)      VERBOSE_MODE=true; shift ;;
         -q|--quiet)        QUIET_MODE=true; shift ;;
         --no-color)        NO_COLOR=true; _apply_no_color; shift ;;
@@ -267,6 +283,8 @@ main() {
     log_debug "  No Color: $NO_COLOR"
     log_debug "  No Cache: $NO_CACHE"
     log_debug "  Dry Run: $DRY_RUN"
+    log_debug "  Recon Mode: $RECON_MODE"
+    log_debug "  Wordlist: ${WORDLIST:-default}"
     log_debug "  Exclude Plugins: ${EXCLUDE_PLUGINS:-none}"
     log_debug "  Only Plugins: ${ONLY_PLUGINS:-none}"
     

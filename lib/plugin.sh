@@ -2,6 +2,7 @@
 
 # lib/plugin.sh - Dynamic Plugin Loader
 # Discovers and loads enumeration modules at runtime
+# Supports passive/active/all recon modes
 
 PLUGIN_DIR=""
 LOADED_PLUGINS=()
@@ -14,48 +15,73 @@ init_plugin_system() {
         return 1
     fi
     
-    log_info "Initializing plugin system from $PLUGIN_DIR"
+    log_info "Initializing plugin system (mode: ${RECON_MODE:-passive})"
     discover_plugins
 }
 
-# Discover all .sh files following the plugin contract
+# Discover plugins based on recon mode (passive/active/all)
 discover_plugins() {
     local count=0
+    local mode="${RECON_MODE:-passive}"
+    local search_dirs=()
     
-    for plugin_file in "$PLUGIN_DIR"/*.sh; do
-        [[ ! -f "$plugin_file" ]] && continue
-        
-        local plugin_name=$(basename "$plugin_file" .sh)
-        local func_name="run_${plugin_name}"
-        
-        # Apply --only filter: skip plugins not in the list
-        if [[ -n "${ONLY_PLUGINS:-}" ]]; then
-            if ! echo ",$ONLY_PLUGINS," | grep -q ",$plugin_name,"; then
-                log_debug "Skipping $plugin_name (not in --only list)"
-                continue
+    # Determine which directories to scan
+    case "$mode" in
+        passive)
+            search_dirs=("$PLUGIN_DIR/passive")
+            ;;
+        active)
+            search_dirs=("$PLUGIN_DIR/active")
+            ;;
+        all)
+            search_dirs=("$PLUGIN_DIR/passive" "$PLUGIN_DIR/active")
+            ;;
+        *)
+            log_error "Unknown recon mode: $mode"
+            return 1
+            ;;
+    esac
+    
+    for dir in "${search_dirs[@]}"; do
+        [[ ! -d "$dir" ]] && continue
+        local category=$(basename "$dir")
+
+        for plugin_file in "$dir"/*.sh; do
+            [[ ! -f "$plugin_file" ]] && continue
+            
+            local plugin_name=$(basename "$plugin_file" .sh)
+            local func_name="run_${plugin_name}"
+            
+            # Apply --only filter: skip plugins not in the list
+            if [[ -n "${ONLY_PLUGINS:-}" ]]; then
+                if ! echo ",$ONLY_PLUGINS," | grep -q ",$plugin_name,"; then
+                    log_debug "Skipping $plugin_name (not in --only list)"
+                    continue
+                fi
             fi
-        fi
-        
-        # Apply --exclude filter: skip plugins in the list
-        if [[ -n "${EXCLUDE_PLUGINS:-}" ]]; then
-            if echo ",$EXCLUDE_PLUGINS," | grep -q ",$plugin_name,"; then
-                log_debug "Skipping $plugin_name (in --exclude list)"
-                continue
+            
+            # Apply --exclude filter: skip plugins in the list
+            if [[ -n "${EXCLUDE_PLUGINS:-}" ]]; then
+                if echo ",$EXCLUDE_PLUGINS," | grep -q ",$plugin_name,"; then
+                    log_debug "Skipping $plugin_name (in --exclude list)"
+                    continue
+                fi
             fi
-        fi
-        
-        # Validate plugin contract: must define run_<name>() function
-        if grep -q "^${func_name}()" "$plugin_file" 2>/dev/null || \
-           grep -q "^${func_name} ()" "$plugin_file" 2>/dev/null; then
-            source "$plugin_file"
-            LOADED_PLUGINS+=("$func_name")
-            ((count++)) || true
-        else
-            log_warning "Skipping invalid plugin: $plugin_name (missing $func_name function)"
-        fi
+            
+            # Validate plugin contract: must define run_<name>() function
+            if grep -q "^${func_name}()" "$plugin_file" 2>/dev/null || \
+               grep -q "^${func_name} ()" "$plugin_file" 2>/dev/null; then
+                source "$plugin_file"
+                LOADED_PLUGINS+=("$func_name")
+                ((count++)) || true
+                log_debug "Loaded [$category] $plugin_name"
+            else
+                log_warning "Skipping invalid plugin: $plugin_name (missing $func_name function)"
+            fi
+        done
     done
     
-    log_success "Loaded $count plugins: ${LOADED_PLUGINS[*]}"
+    log_success "Loaded $count plugins (${mode}): ${LOADED_PLUGINS[*]}"
 }
 
 # Execute all loaded plugins against a target
@@ -92,15 +118,24 @@ list_plugins() {
     echo ""
     echo "Installed Plugins:"
     echo "==================="
-    for plugin_file in "$PLUGIN_DIR"/*.sh; do
-        local name=$(basename "$plugin_file" .sh)
-        local func="run_${name}"
+    
+    for category in passive active; do
+        local cat_dir="$PLUGIN_DIR/$category"
+        [[ ! -d "$cat_dir" ]] && continue
         
-        if printf '%s\n' "${LOADED_PLUGINS[@]}" | grep -q "^${func}$"; then
-            echo "  [✓] $name"
-        else
-            echo "  [✗] $name (invalid contract)"
-        fi
+        echo ""
+        echo "  [$category]"
+        for plugin_file in "$cat_dir"/*.sh; do
+            [[ ! -f "$plugin_file" ]] && continue
+            local name=$(basename "$plugin_file" .sh)
+            local func="run_${name}"
+            
+            if printf '%s\n' "${LOADED_PLUGINS[@]}" | grep -q "^${func}$" 2>/dev/null; then
+                echo "    [✓] $name"
+            else
+                echo "    [ ] $name"
+            fi
+        done
     done
     echo ""
 }
