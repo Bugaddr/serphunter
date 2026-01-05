@@ -22,6 +22,8 @@ source "$SCRIPT_DIR/lib/html_report.sh"
 source "$SCRIPT_DIR/lib/fingerprint.sh"
 source "$SCRIPT_DIR/lib/risk.sh"
 source "$SCRIPT_DIR/lib/markov.sh"
+source "$SCRIPT_DIR/lib/smart_permute.sh"
+source "$SCRIPT_DIR/lib/takeover.sh"
 source "$SCRIPT_DIR/lib/logger.sh"
 
 # Defaults
