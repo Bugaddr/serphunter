@@ -42,6 +42,7 @@ run_smart_permute() {
     # 4. Verify generated permutations (Active Resolution)
     local verified_count=0
     local confirmed_file="$OUTPUT_DIR/${target}_smart_permute_verified_${TIMESTAMP}.txt"
+    > "$confirmed_file"
     
     log_info "Verifying AI-predicted candidates..."
     while read -r candidate; do

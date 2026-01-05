@@ -61,10 +61,10 @@ fingerprint_subdomain() {
     
     # Check security score
     local sec_score=0
-    echo "$headers" | grep -qi "Strict-Transport-Security" && ((sec_score+=25))
-    echo "$headers" | grep -qi "Content-Security-Policy" && ((sec_score+=25))
-    echo "$headers" | grep -qi "X-Frame-Options" && ((sec_score+=25))
-    echo "$headers" | grep -qi "X-Content-Type-Options" && ((sec_score+=25))
+    echo "$headers" | grep -qi "Strict-Transport-Security" && ((sec_score+=25)) || true
+    echo "$headers" | grep -qi "Content-Security-Policy" && ((sec_score+=25)) || true
+    echo "$headers" | grep -qi "X-Frame-Options" && ((sec_score+=25)) || true
+    echo "$headers" | grep -qi "X-Content-Type-Options" && ((sec_score+=25)) || true
     
     if [[ ${#detected[@]} -gt 0 ]]; then
         echo "$subdomain|$(IFS=,; echo "${detected[*]}")|$sec_score"

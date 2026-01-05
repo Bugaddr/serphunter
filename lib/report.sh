@@ -91,7 +91,7 @@ EOF
         '{
             meta: {
                 tool: "SerphunterRecon",
-                version: "1.5",
+                version: "2.0",
                 timestamp: $timestamp,
                 execution_time_seconds: $execution_time,
                 mode: $mode

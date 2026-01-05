@@ -35,7 +35,7 @@ compare_with_history() {
     cat <<EOF > "$diff_report"
 TEMPORAL ANALYSIS REPORT
 ========================
-Baseline Date: $(date -r "$history_file")
+Baseline Date: $(stat -c '%y' "$history_file" 2>/dev/null || date)
 Current Date: $(date)
 
 [+] NEW ASSETS DETECTED: $new_count

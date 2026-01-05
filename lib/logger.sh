@@ -79,6 +79,7 @@ log_metrics() {
 
 # Rotate log files (keep last 10)
 rotate_logs() {
+    [[ -z "${LOG_FILE:-}" ]] && return
     local log_dir=$(dirname "$LOG_FILE")
     local count=$(ls -1 "$log_dir"/serphunter_*.log 2>/dev/null | wc -l)
     

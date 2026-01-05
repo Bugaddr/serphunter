@@ -91,10 +91,10 @@ run_risk_assessment() {
         # Simplified security check
         local sec_score=0
         local headers=$(curl -sI -m 3 "https://$subdomain" 2>/dev/null)
-        echo "$headers" | grep -qi "Strict-Transport-Security" && sec_score=$((sec_score+25))
-        echo "$headers" | grep -qi "Content-Security-Policy" && sec_score=$((sec_score+25))
-        echo "$headers" | grep -qi "X-Frame-Options" && sec_score=$((sec_score+25))
-        echo "$headers" | grep -qi "X-Content-Type-Options" && sec_score=$((sec_score+25))
+        echo "$headers" | grep -qi "Strict-Transport-Security" && sec_score=$((sec_score+25)) || true
+        echo "$headers" | grep -qi "Content-Security-Policy" && sec_score=$((sec_score+25)) || true
+        echo "$headers" | grep -qi "X-Frame-Options" && sec_score=$((sec_score+25)) || true
+        echo "$headers" | grep -qi "X-Content-Type-Options" && sec_score=$((sec_score+25)) || true
         
         # Check takeover
         local is_takeover=0

@@ -20,7 +20,7 @@ export DIM='\033[2m'
 export NC='\033[0m' # No Color
 
 # ── Global Configuration ──
-export CONFIG_FILE="config/serphunter.conf"
+export CONFIG_FILE="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/..}/config/serphunter.conf"
 export OUTPUT_DIR="results"
 export MAX_JOBS=5
 export HTTP_TIMEOUT=10
@@ -50,7 +50,7 @@ print_banner() {
     [[ "$QUIET_MODE" == true ]] && return
     echo -e "${BLUE}╔═══════════════════════════════════════════════════════╗${NC}"
     echo -e "${BLUE}║          SerphunterRecon - Enterprise Edition         ║${NC}"
-    echo -e "${BLUE}║          v1.5 - Professional Security Tool            ║${NC}"
+    echo -e "${BLUE}║          v2.0 - Professional Security Tool            ║${NC}"
     echo -e "${BLUE}╚═══════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
@@ -79,7 +79,7 @@ log_debug() {
 }
 
 check_requirements() {
-    local required_tools=("curl" "grep" "sort" "uniq" "jq")
+    local required_tools=("curl" "grep" "sort" "uniq" "jq" "dig" "bc")
 
     for tool in "${required_tools[@]}"; do
         if ! command -v "$tool" &> /dev/null; then
